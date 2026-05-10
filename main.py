@@ -392,9 +392,9 @@ HTML_PAGE = '''<!DOCTYPE html>
                 </div>
                 <div class="control-group">
                     <label>Modo al llegar al final</label>
-                    <select id="sweep-direction" onchange="updateParams()" style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); color: #00d9ff; border: 1px solid rgba(0, 217, 255, 0.3);">
-                        <option value="restart">Reiniciar desde inicio</option>
-                        <option value="reverse">Regresar hacia atrás</option>
+                    <select id="sweep-direction" onchange="updateParams()" style="width: 100%; padding: 8px; border-radius: 8px; background: linear-gradient(135deg, rgba(15, 52, 96, 0.8), rgba(0, 217, 255, 0.1)); color: #ffffff; border: 2px solid #00d9ff; font-weight: bold; box-shadow: 0 0 10px rgba(0, 217, 255, 0.3);">
+                        <option value="restart" style="background: #1a1a2e; color: #00ff88;">↻ Reiniciar desde inicio</option>
+                        <option value="reverse" style="background: #1a1a2e; color: #ff6b6b;">⇄ Regresar hacia atrás</option>
                     </select>
                 </div>
             </div>
