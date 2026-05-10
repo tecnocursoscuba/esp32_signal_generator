@@ -144,18 +144,39 @@ HTML_PAGE = '''<!DOCTYPE html>
             color: #e0e0e0;
             min-height: 100vh;
             padding: 20px;
+            position: relative;
         }
         
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
         }
         
         h1 {
-            text-align: center;
             color: #00d9ff;
-            margin-bottom: 30px;
             font-size: 2em;
+            text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
+        }
+        
+        .clock-display {
+            text-align: right;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.2);
+        }
+        
+        .clock-date {
+            font-size: 0.85em;
+            color: #808080;
+        }
+        
+        .clock-time {
+            font-size: 1.4em;
+            color: #00d9ff;
+            font-weight: bold;
             text-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
         }
         
@@ -305,7 +326,13 @@ HTML_PAGE = '''<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-        <h1>🎛️ Generador de Señales ESP32</h1>
+        <div class="header-container">
+            <h1>🎛️ Generador de Señales ESP32</h1>
+            <div class="clock-display">
+                <div class="clock-date" id="current-date">--/--/----</div>
+                <div class="clock-time" id="current-time">--:--:--</div>
+            </div>
+        </div>
         
         <div class="card">
             <h2>Modo de Operación</h2>
@@ -397,10 +424,6 @@ HTML_PAGE = '''<!DOCTYPE html>
         
         <div class="card">
             <h2>Monitor en Tiempo Real</h2>
-            <div class="display-panel">
-                <div class="display-value" id="current-time">--:--:--</div>
-                <div class="display-label">Fecha y Hora Local</div>
-            </div>
             <div class="display-panel">
                 <div class="display-value" id="current-freq">1000 Hz</div>
                 <div class="display-label">Frecuencia Actual</div>
@@ -500,7 +523,8 @@ HTML_PAGE = '''<!DOCTYPE html>
                 day: 'numeric' 
             });
             const timeStr = now.toLocaleTimeString('es-ES');
-            document.getElementById('current-time').textContent = dateStr + ' ' + timeStr;
+            document.getElementById('current-date').textContent = dateStr;
+            document.getElementById('current-time').textContent = timeStr;
             
             fetch('/status')
                 .then(response => response.json())
