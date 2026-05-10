@@ -398,6 +398,10 @@ HTML_PAGE = '''<!DOCTYPE html>
         <div class="card">
             <h2>Monitor en Tiempo Real</h2>
             <div class="display-panel">
+                <div class="display-value" id="current-time">--:--:--</div>
+                <div class="display-label">Fecha y Hora Local</div>
+            </div>
+            <div class="display-panel">
                 <div class="display-value" id="current-freq">1000 Hz</div>
                 <div class="display-label">Frecuencia Actual</div>
             </div>
@@ -487,6 +491,17 @@ HTML_PAGE = '''<!DOCTYPE html>
         }
         
         function updateDisplay() {
+            // Actualizar fecha y hora local
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-ES', { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const timeStr = now.toLocaleTimeString('es-ES');
+            document.getElementById('current-time').textContent = dateStr + ' ' + timeStr;
+            
             fetch('/status')
                 .then(response => response.json())
                 .then(data => {
