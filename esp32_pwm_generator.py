@@ -578,6 +578,15 @@ def get_web_page():
         <!-- MODO TABLA -->
         <div id="tablePanel" class="card hidden">
             <h2 class="card-title">📋 Tabla de Valores</h2>
+            
+            <div class="control-group">
+                <div class="control-label">
+                    <span class="control-name">📝 Entrada Rápida (formato: freq1,duty1;freq2,duty2;...)</span>
+                </div>
+                <input type="text" id="bulkInput" placeholder="Ej: 1000,50;2000,60;3000,70" style="width: 100%; padding: 10px; margin-bottom: 10px;" onchange="parseBulkInput()">
+                <small style="color: var(--text-secondary); display: block; margin-bottom: 15px;">Separe pares frecuencia,ciclo con punto y coma. Ej: 1000,50;5000,75;10000,90</small>
+            </div>
+            
             <div class="form-row">
                 <input type="number" id="tableFreq" placeholder="Frecuencia (Hz)" min="1" max="1000000">
                 <input type="number" id="tableDuty" placeholder="Ciclo (%)" min="0" max="100">
@@ -715,7 +724,26 @@ def get_web_page():
                 });
         }
         
-        function addTableEntry() {
+        function parseBulkInput() {
+            const input = document.getElementById('bulkInput').value.trim();
+            if (!input) return;
+
+            const entries = input.split(';');
+            entries.forEach(entry => {
+                const parts = entry.split(',');
+                if (parts.length >= 2) {
+                    const freq = parseInt(parts[0].trim()) || 1000;
+                    const duty = parseInt(parts[1].trim()) || 50;
+                    
+                    fetch('/table?freq=' + freq + '&duty=' + duty);
+                }
+            });
+
+            setTimeout(() => loadTable(), 500);
+            document.getElementById('bulkInput').value = '';
+        }
+
+                function addTableEntry() {
             const freq = parseInt(document.getElementById('tableFreq').value) || 1000;
             const duty = parseInt(document.getElementById('tableDuty').value) || 50;
             
