@@ -581,10 +581,10 @@ def get_web_page():
             
             <div class="control-group">
                 <div class="control-label">
-                    <span class="control-name">📝 Entrada Rápida (formato: freq1,duty1;freq2,duty2;...)</span>
+                    <span class="control-name">📝 Entrada Rápida (formato: freq1,duty1;freq2,duty2 o freq1,duty1,freq2,duty2)</span>
                 </div>
-                <input type="text" id="bulkInput" placeholder="Ej: 1000,50;2000,60;3000,70" style="width: 100%; padding: 10px; margin-bottom: 10px;" onchange="parseBulkInput()">
-                <small style="color: var(--text-secondary); display: block; margin-bottom: 15px;">Separe pares frecuencia,ciclo con punto y coma. Ej: 1000,50;5000,75;10000,90</small>
+                <input type="text" id="bulkInput" placeholder="Ej: 1000,50;2000,60;3000,70 o 1000,50,2000,60,3000,70" style="width: 100%; padding: 10px; margin-bottom: 10px;" onchange="parseBulkInput()">
+                <small style="color: var(--text-secondary); display: block; margin-bottom: 15px;">Separe pares frecuencia,ciclo con punto y coma (;) o comas. Ej: 1000,50;5000,75;10000,90</small>
             </div>
             
             <div class="form-row">
@@ -728,18 +728,31 @@ def get_web_page():
             const input = document.getElementById('bulkInput').value.trim();
             if (!input) return;
 
-            const entries = input.split(';');
+            // Soporta formatos: "freq1,duty1;freq2,duty2" o "freq1,duty1,freq2,duty2"
+            let entries = [];
+            if (input.includes(';')) {
+                entries = input.split(';');
+            } else {
+                const parts = input.split(',');
+                for (let i = 0; i < parts.length - 1; i += 2) {
+                    entries.push(parts[i] + ',' + parts[i+1]);
+                }
+            }
+            
             entries.forEach(entry => {
                 const parts = entry.split(',');
                 if (parts.length >= 2) {
                     const freq = parseInt(parts[0].trim()) || 1000;
                     const duty = parseInt(parts[1].trim()) || 50;
                     
-                    fetch('/table?freq=' + freq + '&duty=' + duty);
+                    fetch('/pwm?freq=' + freq + '&duty=' + duty);
                 }
             });
 
-            setTimeout(() => loadTable(), 500);
+            setTimeout(() => {
+                loadTable();
+                updateStatus();
+            }, 300);
             document.getElementById('bulkInput').value = '';
         }
 
