@@ -25,7 +25,9 @@ sweep_params = {
     "freq_end": 100000,
     "freq_step": 1000,
     "duty": 50,
-    "interval_ms": 100
+    "interval_ms": 100,
+    "use_table": False,
+    "table_data": []  # Lista de diccionarios {"freq": x, "duty": y}
 }
 noise_params = {
     "freq_min": 1000,
@@ -38,6 +40,7 @@ current_freq = 1000
 current_duty = 50
 sweep_running = False
 sweep_freq = None
+sweep_index = 0  # Índice para recorrer la tabla
 
 def connect_wifi():
     """Conecta a la red WiFi"""
@@ -85,11 +88,25 @@ def set_pwm(freq, duty):
 
 def update_sweep():
     """Actualiza el generador de barrido"""
-    global sweep_freq, sweep_params, mode
+    global sweep_freq, sweep_params, mode, sweep_index
     
     if mode != "sweep" or sweep_freq is None:
         return
     
+    # Si usa tabla, obtener valores de la tabla
+    if sweep_params.get("use_table", False) and sweep_params.get("table_data"):
+        table = sweep_params["table_data"]
+        if sweep_index < len(table):
+            entry = table[sweep_index]
+            freq = entry.get("freq", sweep_freq)
+            duty = entry.get("duty", sweep_params["duty"])
+            set_pwm(freq, duty)
+            sweep_index += 1
+            if sweep_index >= len(table):
+                sweep_index = 0  # Reiniciar desde el principio
+        return
+    
+    # Modo normal: barrido por rango
     set_pwm(sweep_freq, sweep_params["duty"])
     
     # Calcular siguiente frecuencia (modo: reiniciar desde el principio)
@@ -361,26 +378,43 @@ HTML_PAGE = '''<!DOCTYPE html>
         
         <div class="card hidden" id="sweep-controls">
             <h2>Generador de Barrido</h2>
-            <div class="grid-2">
-                <div class="control-group">
-                    <label>Frecuencia Inicial (Hz)</label>
-                    <input type="number" id="sweep-start" value="1000" onchange="updateParams()">
+            <div class="control-group" style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="sweep-use-table" onchange="toggleSweepTable()" style="width: auto;">
+                    Usar tabla de valores personalizados
+                </label>
+            </div>
+            
+            <div id="sweep-range-controls">
+                <div class="grid-2">
+                    <div class="control-group">
+                        <label>Frecuencia Inicial (Hz)</label>
+                        <input type="number" id="sweep-start" value="1000" onchange="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <label>Frecuencia Final (Hz)</label>
+                        <input type="number" id="sweep-end" value="100000" onchange="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <label>Salto de Frecuencia (Hz)</label>
+                        <input type="number" id="sweep-step" value="1000" onchange="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <label>Ciclo de Trabajo (%)</label>
+                        <input type="number" id="sweep-duty" value="50" min="0" max="100" onchange="updateParams()">
+                    </div>
+                    <div class="control-group">
+                        <label>Intervalo (ms)</label>
+                        <input type="number" id="sweep-interval" value="100" min="10" onchange="updateParams()">
+                    </div>
                 </div>
+            </div>
+            
+            <div id="sweep-table-controls" class="hidden">
                 <div class="control-group">
-                    <label>Frecuencia Final (Hz)</label>
-                    <input type="number" id="sweep-end" value="100000" onchange="updateParams()">
-                </div>
-                <div class="control-group">
-                    <label>Salto de Frecuencia (Hz)</label>
-                    <input type="number" id="sweep-step" value="1000" onchange="updateParams()">
-                </div>
-                <div class="control-group">
-                    <label>Ciclo de Trabajo (%)</label>
-                    <input type="number" id="sweep-duty" value="50" min="0" max="100" onchange="updateParams()">
-                </div>
-                <div class="control-group">
-                    <label>Intervalo (ms)</label>
-                    <input type="number" id="sweep-interval" value="100" min="10" onchange="updateParams()">
+                    <label>Tabla de Valores (Frecuencia Hz, Ciclo %)</label>
+                    <textarea id="sweep-table-data" rows="6" placeholder="Ejemplo:&#10;1000, 50&#10;2000, 60&#10;3000, 70&#10;4000, 80" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(0, 0, 0, 0.3); color: #00d9ff; font-family: monospace;" onchange="updateParams()"></textarea>
+                    <small style="color: #808080; display: block; margin-top: 5px;">Formato: cada línea debe tener "frecuencia, ciclo"</small>
                 </div>
             </div>
         </div>
@@ -482,11 +516,19 @@ HTML_PAGE = '''<!DOCTYPE html>
             const params = {};
             
             if (currentMode === 'sweep') {
-                params.freq_start = parseInt(document.getElementById('sweep-start').value);
-                params.freq_end = parseInt(document.getElementById('sweep-end').value);
-                params.freq_step = parseInt(document.getElementById('sweep-step').value);
-                params.duty = parseInt(document.getElementById('sweep-duty').value);
-                params.interval_ms = parseInt(document.getElementById('sweep-interval').value);
+                const useTable = document.getElementById('sweep-use-table').checked;
+                params.use_table = useTable;
+                
+                if (useTable) {
+                    const tableText = document.getElementById('sweep-table-data').value;
+                    params.table_data = parseTableData(tableText);
+                } else {
+                    params.freq_start = parseInt(document.getElementById('sweep-start').value);
+                    params.freq_end = parseInt(document.getElementById('sweep-end').value);
+                    params.freq_step = parseInt(document.getElementById('sweep-step').value);
+                    params.duty = parseInt(document.getElementById('sweep-duty').value);
+                    params.interval_ms = parseInt(document.getElementById('sweep-interval').value);
+                }
             } else if (currentMode === 'noise') {
                 params.freq_min = parseInt(document.getElementById('noise-freq-min').value);
                 params.freq_max = parseInt(document.getElementById('noise-freq-max').value);
@@ -500,6 +542,38 @@ HTML_PAGE = '''<!DOCTYPE html>
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(params)
             });
+        }
+        
+        function parseTableData(text) {
+            const lines = text.trim().split('\n');
+            const table = [];
+            for (const line of lines) {
+                const parts = line.split(',');
+                if (parts.length >= 2) {
+                    const freq = parseInt(parts[0].trim());
+                    const duty = parseInt(parts[1].trim());
+                    if (!isNaN(freq) && !isNaN(duty)) {
+                        table.push({freq: freq, duty: duty});
+                    }
+                }
+            }
+            return table;
+        }
+        
+        function toggleSweepTable() {
+            const useTable = document.getElementById('sweep-use-table').checked;
+            const rangeControls = document.getElementById('sweep-range-controls');
+            const tableControls = document.getElementById('sweep-table-controls');
+            
+            if (useTable) {
+                rangeControls.classList.add('hidden');
+                tableControls.classList.remove('hidden');
+            } else {
+                rangeControls.classList.remove('hidden');
+                tableControls.classList.add('hidden');
+            }
+            
+            updateParams();
         }
         
         function updateDisplay() {
@@ -634,6 +708,10 @@ def handle_client(client):
                 try:
                     data = json.loads(body)
                     
+                    if 'use_table' in data:
+                        sweep_params['use_table'] = data['use_table']
+                    if 'table_data' in data:
+                        sweep_params['table_data'] = data['table_data']
                     if 'freq_start' in data:
                         sweep_params['freq_start'] = data['freq_start']
                     if 'freq_end' in data:
