@@ -31,7 +31,8 @@ noise_params = {
     "freq_min": 1000,
     "freq_max": 10000,
     "duty_min": 10,
-    "duty_max": 90
+    "duty_max": 90,
+    "interval_ms": 100
 }
 current_freq = 1000
 current_duty = 50
@@ -110,6 +111,9 @@ def update_noise():
     freq = random.randint(noise_params["freq_min"], noise_params["freq_max"])
     duty = random.randint(noise_params["duty_min"], noise_params["duty_max"])
     set_pwm(freq, duty)
+    
+    # Pequeña pausa según el intervalo configurado
+    time.sleep_ms(noise_params.get("interval_ms", 100))
 
 # HTML de la página web
 HTML_PAGE = '''<!DOCTYPE html>
@@ -400,6 +404,10 @@ HTML_PAGE = '''<!DOCTYPE html>
                     <label>Ciclo Máximo (%)</label>
                     <input type="number" id="noise-duty-max" value="90" min="0" max="100" onchange="updateParams()">
                 </div>
+                <div class="control-group">
+                    <label>Intervalo (ms)</label>
+                    <input type="number" id="noise-interval" value="100" min="10" onchange="updateParams()">
+                </div>
             </div>
         </div>
         
@@ -484,6 +492,7 @@ HTML_PAGE = '''<!DOCTYPE html>
                 params.freq_max = parseInt(document.getElementById('noise-freq-max').value);
                 params.duty_min = parseInt(document.getElementById('noise-duty-min').value);
                 params.duty_max = parseInt(document.getElementById('noise-duty-max').value);
+                params.interval_ms = parseInt(document.getElementById('noise-interval').value);
             }
             
             fetch('/params', {
@@ -643,6 +652,8 @@ def handle_client(client):
                         noise_params['duty_min'] = data['duty_min']
                     if 'duty_max' in data:
                         noise_params['duty_max'] = data['duty_max']
+                    if 'interval_ms' in data:
+                        noise_params['interval_ms'] = data['interval_ms']
                 except:
                     pass
             
