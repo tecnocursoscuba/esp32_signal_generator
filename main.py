@@ -263,9 +263,10 @@ HTML_PAGE = '''<!DOCTYPE html>
         }
         
         .mode-btn.active {
-            background: #00d9ff;
-            color: #1a1a2e;
-            box-shadow: 0 0 15px rgba(0, 217, 255, 0.5);
+            background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(233, 69, 96, 0.5);
+            border-color: #e94560;
         }
         
         .display-panel {
