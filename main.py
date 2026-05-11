@@ -12,6 +12,11 @@ WIFI_PASSWORD = "88888888"
 # Pin PWM (GPIO 12 = D12 en muchas placas ESP32)
 PWM_PIN = 12
 
+# Constantes pre-calculadas
+DUTY_SCALE = 655.35
+MAX_FREQ = 1000000
+MIN_FREQ = 1
+
 # Variables globales
 pwm = None
 mode = "manual"  # manual, sweep, noise
@@ -33,6 +38,7 @@ current_freq = 1000
 current_duty = 50
 sweep_running = False
 sweep_freq = None
+sweep_direction_up = True  # Variable global para dirección del barrido
 
 def connect_wifi():
     """Conecta a la red WiFi"""
@@ -67,20 +73,20 @@ def set_pwm(freq, duty):
     if pwm is None:
         init_pwm()
     
-    # Limitar frecuencia entre 1Hz y 1MHz
-    freq = max(1, min(1000000, int(freq)))
-    duty = max(0, min(100, int(duty)))
+    # Limitar frecuencia entre 1Hz y 1MHz (usando constantes)
+    freq = MAX_FREQ if freq > MAX_FREQ else (MIN_FREQ if freq < MIN_FREQ else int(freq))
+    duty = 100 if duty > 100 else (0 if duty < 0 else int(duty))
     
     pwm.freq(freq)
-    # duty_u16 va de 0 a 65535
-    pwm.duty_u16(int(duty * 655.35))
+    # duty_u16 va de 0 a 65535 (usando constante pre-calculada)
+    pwm.duty_u16(int(duty * DUTY_SCALE))
     
     current_freq = freq
     current_duty = duty
 
 def update_sweep():
     """Actualiza el generador de barrido"""
-    global sweep_freq, sweep_params, mode, sweep_direction
+    global sweep_freq, sweep_params, mode, sweep_direction_up
     
     if mode != "sweep" or sweep_freq is None:
         return
@@ -98,19 +104,16 @@ def update_sweep():
             sweep_freq = sweep_params["freq_start"]
     else:
         # Modo: reversa (ida y vuelta)
-        if not hasattr(update_sweep, 'going_up'):
-            update_sweep.going_up = True
-        
-        if update_sweep.going_up:
+        if sweep_direction_up:
             sweep_freq += sweep_params["freq_step"]
             if sweep_freq >= sweep_params["freq_end"]:
                 sweep_freq = sweep_params["freq_end"]
-                update_sweep.going_up = False
+                sweep_direction_up = False
         else:
             sweep_freq -= sweep_params["freq_step"]
             if sweep_freq <= sweep_params["freq_start"]:
                 sweep_freq = sweep_params["freq_start"]
-                update_sweep.going_up = True
+                sweep_direction_up = True
 
 
 def update_noise():
@@ -658,8 +661,8 @@ def handle_client(client):
                     if 'direction' in data:
                         sweep_params['direction'] = data['direction']
                         # Reset direction state when changing mode
-                        if hasattr(update_sweep, 'going_up'):
-                            del update_sweep.going_up
+                        global sweep_direction_up
+                        sweep_direction_up = True
                     if 'freq_min' in data:
                         noise_params['freq_min'] = data['freq_min']
                     if 'freq_max' in data:
