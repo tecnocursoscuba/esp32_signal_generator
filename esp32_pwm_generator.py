@@ -47,7 +47,8 @@ noise_config = {
     "min_freq": 100,
     "max_freq": 10000,
     "min_duty": 10,
-    "max_duty": 90
+    "max_duty": 90,
+    "interval_ms": 10
 }
 
 # Tabla de valores
@@ -144,8 +145,8 @@ def update_noise():
     
     current_time = time.ticks_ms()
     
-    # Actualizar cada 10ms aproximadamente
-    if time.ticks_diff(current_time, noise_last_update) >= 10:
+    # Actualizar según el intervalo configurado
+    if time.ticks_diff(current_time, noise_last_update) >= noise_config["interval_ms"]:
         noise_last_update = current_time
         
         freq = random.randint(noise_config["min_freq"], noise_config["max_freq"])
@@ -572,6 +573,12 @@ def get_web_page():
                         <input type="number" id="noiseMaxDuty" value="90" min="0" max="100" onchange="updateNoiseConfig()">
                     </div>
                 </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span class="control-name">Intervalo entre Ciclos (ms)</span>
+                        <input type="number" id="noiseInterval" value="10" min="1" max="10000" onchange="updateNoiseConfig()">
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -646,6 +653,8 @@ def get_web_page():
             
             if (mode === 'table') {
                 loadTable();
+            } else if (mode === 'noise') {
+                document.getElementById('noiseInterval').value = 10;
             }
         }
         
@@ -698,7 +707,8 @@ def get_web_page():
                 min_freq: parseInt(document.getElementById('noiseMinFreq').value) || 100,
                 max_freq: parseInt(document.getElementById('noiseMaxFreq').value) || 10000,
                 min_duty: parseInt(document.getElementById('noiseMinDuty').value) || 10,
-                max_duty: parseInt(document.getElementById('noiseMaxDuty').value) || 90
+                max_duty: parseInt(document.getElementById('noiseMaxDuty').value) || 90,
+                interval_ms: parseInt(document.getElementById('noiseInterval').value) || 10
             };
             
             fetch('/noise?config=' + encodeURIComponent(JSON.stringify(config)));
