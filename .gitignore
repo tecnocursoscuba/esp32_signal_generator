@@ -1,1 +1,51 @@
-Nothing should be ignored based on the provided file changes. The only modified file is 'main.py', which is a source code file and should not be added to .gitignore. There are no build artifacts, dependencies, or temporary files in the changes that require ignoring.
+```
+# Compiled and binary files
+*.pyc
+__pycache__/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
+# Build artifacts
+build/
+dist/
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment files
+.env
+.env.local
+*.env.*
+
+# Editors and IDE
+.vscode/
+.idea/
+*.pyc
+__pycache__/
+
+# Coverage and testing
+.coverage
+coverage/
+htmlcov/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Cache directories
+.mypy_cache/
+.pytest_cache/
+.gradle/
+target/
+```
