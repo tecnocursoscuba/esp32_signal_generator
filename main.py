@@ -412,9 +412,21 @@ HTML_PAGE = '''<!DOCTYPE html>
             
             <div id="sweep-table-controls" class="hidden">
                 <div class="control-group">
-                    <label>Tabla de Valores (Frecuencia Hz, Ciclo %)</label>
-                    <textarea id="sweep-table-data" rows="6" placeholder="Ejemplo:&#10;1000, 50&#10;2000, 60&#10;3000, 70&#10;4000, 80" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(0, 0, 0, 0.3); color: #00d9ff; font-family: monospace;" onchange="updateParams()"></textarea>
-                    <small style="color: #808080; display: block; margin-top: 5px;">Formato: cada línea debe tener "frecuencia, ciclo"</small>
+                    <label>Tabla de Valores Personalizados</label>
+                    <table id="sweep-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                        <thead>
+                            <tr style="background: rgba(0, 217, 255, 0.2);">
+                                <th style="padding: 10px; text-align: left; border: 1px solid rgba(0, 217, 255, 0.3);">Paso</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid rgba(0, 217, 255, 0.3);">Frecuencia (Hz)</th>
+                                <th style="padding: 10px; text-align: left; border: 1px solid rgba(0, 217, 255, 0.3);">Ciclo (%)</th>
+                                <th style="padding: 10px; text-align: center; border: 1px solid rgba(0, 217, 255, 0.3);">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sweep-table-body"></tbody>
+                    </table>
+                    <button onclick="addTableRow()" style="padding: 8px 16px; background: rgba(0, 217, 255, 0.2); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 8px; cursor: pointer;">+ Añadir Fila</button>
+                    <textarea id="sweep-table-data" rows="3" placeholder="Datos en formato JSON o texto..." style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 217, 255, 0.3); background: rgba(0, 0, 0, 0.3); color: #00d9ff; font-family: monospace; margin-top: 10px;" onchange="updateParams()"></textarea>
+                    <small style="color: #808080; display: block; margin-top: 5px;">Formato: cada línea "frecuencia, ciclo" o usa la tabla visual</small>
                 </div>
             </div>
         </div>
@@ -559,7 +571,67 @@ HTML_PAGE = '''<!DOCTYPE html>
             }
             return table;
         }
-        
+
+        function addTableRow() {
+            const tbody = document.getElementById('sweep-table-body');
+            const row = document.createElement('tr');
+            const rowCount = tbody.rows.length + 1;
+            row.innerHTML = `
+                <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);">${rowCount}</td>
+                <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);"><input type="number" value="1000" min="1" max="1000000" onchange="updateTableFromUI()" style="width: 100%; padding: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 4px;"></td>
+                <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);"><input type="number" value="50" min="0" max="100" onchange="updateTableFromUI()" style="width: 100%; padding: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 4px;"></td>
+                <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3); text-align: center;"><button onclick="removeRow(this)" style="padding: 5px 10px; background: rgba(233, 69, 96, 0.3); border: 1px solid rgba(233, 69, 96, 0.5); color: #e94560; border-radius: 4px; cursor: pointer;">×</button></td>
+            `;
+            tbody.appendChild(row);
+            updateTableFromUI();
+        }
+
+        function removeRow(btn) {
+            const row = btn.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+            renumberRows();
+            updateTableFromUI();
+        }
+
+        function renumberRows() {
+            const tbody = document.getElementById('sweep-table-body');
+            for (let i = 0; i < tbody.rows.length; i++) {
+                tbody.rows[i].cells[0].textContent = i + 1;
+            }
+        }
+
+        function updateTableFromUI() {
+            const tbody = document.getElementById('sweep-table-body');
+            const table = [];
+            for (let i = 0; i < tbody.rows.length; i++) {
+                const freqInput = tbody.rows[i].cells[1].querySelector('input');
+                const dutyInput = tbody.rows[i].cells[2].querySelector('input');
+                const freq = parseInt(freqInput.value);
+                const duty = parseInt(dutyInput.value);
+                if (!isNaN(freq) && !isNaN(duty)) {
+                    table.push({freq: freq, duty: duty});
+                }
+            }
+            document.getElementById('sweep-table-data').value = JSON.stringify(table);
+            updateParams();
+        }
+
+        function loadTableToUI(tableData) {
+            const tbody = document.getElementById('sweep-table-body');
+            tbody.innerHTML = '';
+            for (const entry of tableData) {
+                const row = document.createElement('tr');
+                const rowCount = tbody.rows.length + 1;
+                row.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);">${rowCount}</td>
+                    <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);"><input type="number" value="${entry.freq}" min="1" max="1000000" onchange="updateTableFromUI()" style="width: 100%; padding: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 4px;"></td>
+                    <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3);"><input type="number" value="${entry.duty}" min="0" max="100" onchange="updateTableFromUI()" style="width: 100%; padding: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0, 217, 255, 0.3); color: #00d9ff; border-radius: 4px;"></td>
+                    <td style="padding: 8px; border: 1px solid rgba(0, 217, 255, 0.3); text-align: center;"><button onclick="removeRow(this)" style="padding: 5px 10px; background: rgba(233, 69, 96, 0.3); border: 1px solid rgba(233, 69, 96, 0.5); color: #e94560; border-radius: 4px; cursor: pointer;">×</button></td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
         function toggleSweepTable() {
             const useTable = document.getElementById('sweep-use-table').checked;
             const rangeControls = document.getElementById('sweep-range-controls');
