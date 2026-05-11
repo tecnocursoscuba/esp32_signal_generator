@@ -2,7 +2,7 @@
 MicroPython ESP32 - Generador de Señales PWM con Interfaz Web
 Características:
 - Conexión WiFi a "x1" con contraseña "88888888"
-- Frecuencia: 1Hz a 1MHz (pin GPIO12)
+- Frecuencia: 1Hz a 1MHz (pin GPIO12/D12)
 - Control de frecuencia y ciclo de trabajo
 - Generador de barrido de frecuencia
 - Generador de ruido
@@ -15,6 +15,7 @@ import socket
 import time
 import json
 import random
+import urllib.parse
 from machine import Pin, PWM
 
 # ==================== CONFIGURACIÓN WIFI ====================
@@ -57,6 +58,14 @@ value_table = [
 ]
 table_index = 0
 table_start_time = 0
+
+# Variables de estado para barrido
+sweep_current_freq = 0
+sweep_direction = 1
+sweep_last_update = 0
+
+# Variables de estado para ruido
+noise_last_update = 0
 
 # ==================== INICIALIZACIÓN WIFI ====================
 def connect_wifi():
@@ -106,10 +115,6 @@ def set_pwm(freq, duty):
         pwm.duty_u16(duty_value)
 
 # ==================== GENERADOR DE BARRIDO ====================
-sweep_current_freq = 0
-sweep_direction = 1
-sweep_last_update = 0
-
 def update_sweep():
     global sweep_current_freq, sweep_direction, sweep_last_update
     
@@ -134,8 +139,6 @@ def update_sweep():
     return sweep_current_freq, sweep_config["duty"]
 
 # ==================== GENERADOR DE RUIDO ====================
-noise_last_update = 0
-
 def update_noise():
     global noise_last_update
     
@@ -795,7 +798,6 @@ def start_server(ip):
                     
                     # API: Cambiar modo
                     elif path.startswith('/mode'):
-                        global current_mode
                         if 'mode=' in path:
                             current_mode = path.split('mode=')[1].split('&')[0]
                         send_response(client, '{"status":"ok"}', 'application/json')
