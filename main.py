@@ -25,8 +25,7 @@ sweep_params = {
     "freq_end": 100000,
     "freq_step": 1000,
     "duty": 50,
-    "interval_ms": 100,
-    "direction": "restart"  # "restart" o "reverse"
+    "interval_ms": 100
 }
 noise_params = {
     "freq_min": 1000,
@@ -38,7 +37,6 @@ current_freq = 1000
 current_duty = 50
 sweep_running = False
 sweep_freq = None
-sweep_direction_up = True  # Variable global para dirección del barrido
 
 def connect_wifi():
     """Conecta a la red WiFi"""
@@ -86,34 +84,20 @@ def set_pwm(freq, duty):
 
 def update_sweep():
     """Actualiza el generador de barrido"""
-    global sweep_freq, sweep_params, mode, sweep_direction_up
+    global sweep_freq, sweep_params, mode
     
     if mode != "sweep" or sweep_freq is None:
         return
     
     set_pwm(sweep_freq, sweep_params["duty"])
     
-    # Calcular siguiente frecuencia según dirección
-    if sweep_params["direction"] == "restart":
-        # Modo: reiniciar desde el principio
-        if sweep_freq < sweep_params["freq_end"]:
-            sweep_freq += sweep_params["freq_step"]
-            if sweep_freq > sweep_params["freq_end"]:
-                sweep_freq = sweep_params["freq_end"]
-        else:
-            sweep_freq = sweep_params["freq_start"]
+    # Calcular siguiente frecuencia (modo: reiniciar desde el principio)
+    if sweep_freq < sweep_params["freq_end"]:
+        sweep_freq += sweep_params["freq_step"]
+        if sweep_freq > sweep_params["freq_end"]:
+            sweep_freq = sweep_params["freq_end"]
     else:
-        # Modo: reversa (ida y vuelta)
-        if sweep_direction_up:
-            sweep_freq += sweep_params["freq_step"]
-            if sweep_freq >= sweep_params["freq_end"]:
-                sweep_freq = sweep_params["freq_end"]
-                sweep_direction_up = False
-        else:
-            sweep_freq -= sweep_params["freq_step"]
-            if sweep_freq <= sweep_params["freq_start"]:
-                sweep_freq = sweep_params["freq_start"]
-                sweep_direction_up = True
+        sweep_freq = sweep_params["freq_start"]
 
 
 def update_noise():
@@ -393,13 +377,6 @@ HTML_PAGE = '''<!DOCTYPE html>
                     <label>Intervalo (ms)</label>
                     <input type="number" id="sweep-interval" value="100" min="10" onchange="updateParams()">
                 </div>
-                <div class="control-group">
-                    <label>Modo al llegar al final</label>
-                    <select id="sweep-direction" onchange="updateParams()" style="width: 100%; padding: 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.3); color: #00d9ff; border: 1px solid rgba(0, 217, 255, 0.3);">
-                        <option value="restart">Reiniciar desde inicio</option>
-                        <option value="reverse">Regresar hacia atrás</option>
-                    </select>
-                </div>
             </div>
         </div>
         
@@ -501,7 +478,6 @@ HTML_PAGE = '''<!DOCTYPE html>
                 params.freq_step = parseInt(document.getElementById('sweep-step').value);
                 params.duty = parseInt(document.getElementById('sweep-duty').value);
                 params.interval_ms = parseInt(document.getElementById('sweep-interval').value);
-                params.direction = document.getElementById('sweep-direction').value;
             } else if (currentMode === 'noise') {
                 params.freq_min = parseInt(document.getElementById('noise-freq-min').value);
                 params.freq_max = parseInt(document.getElementById('noise-freq-max').value);
@@ -658,11 +634,6 @@ def handle_client(client):
                         sweep_params['duty'] = data['duty']
                     if 'interval_ms' in data:
                         sweep_params['interval_ms'] = data['interval_ms']
-                    if 'direction' in data:
-                        sweep_params['direction'] = data['direction']
-                        # Reset direction state when changing mode
-                        global sweep_direction_up
-                        sweep_direction_up = True
                     if 'freq_min' in data:
                         noise_params['freq_min'] = data['freq_min']
                     if 'freq_max' in data:
